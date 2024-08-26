@@ -1,0 +1,79 @@
+---
+- name: Read Secret Configuration from connection_secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    api_version: v1
+    name: "{{ connection_secret }}"
+    namespace: "{{ ansible_operator_meta.namespace }}"
+  register: tower_connection_secret
+  when: connection_secret is defined
+
+- name: DEPRECATED Read Secret Configuration from tower_auth_secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    api_version: v1
+    name: "{{ tower_auth_secret }}"
+    namespace: "{{ ansible_operator_meta.namespace }}"
+  register: tower_connection_deprecated_secret
+  when: tower_auth_secret is defined
+
+- name: Set fact based on secret results
+  set_fact:
+     tower_config_secret: "{{ tower_connection_secret }}"
+  when: tower_connection_secret is not skipped and tower_connection_deprecated_secret is skipped
+
+- name: Set fact based on secret results
+  set_fact:
+    tower_config_secret: "{{ tower_connection_deprecated_secret }}"
+  when: tower_connection_deprecated_secret is not skipped and tower_connection_secret is skipped
+
+- name: Validate Secret Exists
+  assert:
+    that:
+      - tower_config_secret["resources"] is defined and (tower_config_secret["resources"]|length>0)
+    fail_msg: "Tower Secret must exist"
+
+- name: Create Execution Environment
+  awx.awx.execution_environment:
+    name: "{{ name | default(execution_environment_name) }}"
+    new_name: "{{ new_name | default(execution_environment_new_name) }}"
+    credential: "{{ credential | default (execution_environment_credential) }}"
+    description: "{{ description | default (execution_environment_description) }}"
+    image: "{{ image | default (execution_environment_image) }}"
+    organization: "{{ organization | default(execution_environment_organization | default(omit)) }}"
+    pull: "{{ pull | default(execution_environment_pull | default('missing')) }}"
+    request_timeout: "{{ request_timeout | default(10)}}"
+    state: "{{ tower_resource_state if tower_resource_state is defined else 'present' }}"
+    validate_certs: "{{ tower_resource_validate_certs if tower_resource_validate_certs is defined else 'present' }}"
+  environment:
+    - TOWER_OAUTH_TOKEN: "{{ tower_config_secret['resources'][0]['data']['token'] | b64decode }}"
+    - TOWER_HOST: "{{ tower_config_secret['resources'][0]['data']['host'] | b64decode }}"
+    - TOWER_VERIFY_SSL: "False"
+  register: execution_environment
+  ignore_errors: true
+
+- name: Update the k8s status
+  operator_sdk.util.k8s_status:
+    api_version: tower.ansible.com/v1alpha1
+    kind: executionenvironment
+    name: '{{ ansible_operator_meta.name }}'
+    namespace: '{{ ansible_operator_meta.namespace }}'
+    status:
+      isFinished: true
+      message: "Job Template Created"
+  when:
+    - execution_environment.changed
+
+- name: Update the k8s status
+  operator_sdk.util.k8s_status:
+    api_version: tower.ansible.com/v1alpha1
+    kind: executionenvironment
+    name: '{{ ansible_operator_meta.name }}'
+    namespace: '{{ ansible_operator_meta.namespace }}'
+    status:
+      isFinished: true
+      error: true
+      message: "There was an error in the job template"
+  when:
+    - execution_environment.failed
+
