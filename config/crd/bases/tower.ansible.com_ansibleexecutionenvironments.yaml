@@ -58,6 +58,8 @@ spec:
               state:
                 type: string
                 description: The state for the executionenvironment
+                enum: ["present", "absent", "exists"]
+                default: present
               validate_certs:
                 type: string
                 description: The validate_certs for the executionenvironment
