@@ -60,7 +60,7 @@
     namespace: '{{ ansible_operator_meta.namespace }}'
     status:
       isFinished: true
-      message: "Job Template Created"
+      message: "Execution Environment Created"
   when:
     - execution_environment.changed
 
@@ -73,7 +73,7 @@
     status:
       isFinished: true
       error: true
-      message: "There was an error in the job template"
+      message: "There was an error in the execution environment"
   when:
     - execution_environment.failed
 

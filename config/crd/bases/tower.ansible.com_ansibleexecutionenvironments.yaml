@@ -37,6 +37,9 @@ spec:
               new_name:
                 type: string
                 description: The new name for the executionenvironment in case of a name change
+              credential:
+                type: string
+                description: The container registry credential for pulling the executionenvironment image
               description:
                 type: string
                 description: The description for the executionenvironment
