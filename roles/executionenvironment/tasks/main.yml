@@ -8,15 +8,6 @@
   register: tower_connection_secret
   when: connection_secret is defined
 
-- name: DEPRECATED Read Secret Configuration from tower_auth_secret
-  kubernetes.core.k8s_info:
-    kind: Secret
-    api_version: v1
-    name: "{{ tower_auth_secret }}"
-    namespace: "{{ ansible_operator_meta.namespace }}"
-  register: tower_connection_deprecated_secret
-  when: tower_auth_secret is defined
-
 - name: Set fact based on secret results
   set_fact:
      tower_config_secret: "{{ tower_connection_secret }}"
