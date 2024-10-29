@@ -6,17 +6,10 @@
     name: "{{ connection_secret }}"
     namespace: "{{ ansible_operator_meta.namespace }}"
   register: tower_connection_secret
-  when: connection_secret is defined
 
 - name: Set fact based on secret results
   set_fact:
-     tower_config_secret: "{{ tower_connection_secret }}"
-  when: tower_connection_secret is not skipped and tower_connection_deprecated_secret is skipped
-
-- name: Set fact based on secret results
-  set_fact:
-    tower_config_secret: "{{ tower_connection_deprecated_secret }}"
-  when: tower_connection_deprecated_secret is not skipped and tower_connection_secret is skipped
+    tower_config_secret: "{{ tower_connection_secret }}"
 
 - name: Validate Secret Exists
   assert:
@@ -26,16 +19,16 @@
 
 - name: Create Execution Environment
   awx.awx.execution_environment:
-    name: "{{ name | default(execution_environment_name) }}"
-    new_name: "{{ new_name | default(execution_environment_new_name) }}"
-    credential: "{{ credential | default (execution_environment_credential) }}"
-    description: "{{ description | default (execution_environment_description) }}"
-    image: "{{ image | default (execution_environment_image) }}"
-    organization: "{{ organization | default(execution_environment_organization | default(omit)) }}"
-    pull: "{{ pull | default(execution_environment_pull | default('missing')) }}"
-    request_timeout: "{{ request_timeout | default(10)}}"
-    state: "{{ tower_resource_state if tower_resource_state is defined else 'present' }}"
-    validate_certs: "{{ tower_resource_validate_certs if tower_resource_validate_certs is defined else 'present' }}"
+    name: "{{ name }}"
+    new_name: "{{ new_name | default(omit) }}"
+    credential: "{{ credential | default(omit) }}"
+    description: "{{ description }}"
+    image: "{{ image | default(omit) }}"
+    organization: "{{ organization | default(omit) }}"
+    pull: "{{ pull | default(omit) }}"
+    request_timeout: "{{ request_timeout | default(omit) }}"
+    state: "{{ state | default('present') }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
   environment:
     - TOWER_OAUTH_TOKEN: "{{ tower_config_secret['resources'][0]['data']['token'] | b64decode }}"
     - TOWER_HOST: "{{ tower_config_secret['resources'][0]['data']['host'] | b64decode }}"
@@ -67,4 +60,3 @@
       message: "There was an error in the execution environment"
   when:
     - execution_environment.failed
-

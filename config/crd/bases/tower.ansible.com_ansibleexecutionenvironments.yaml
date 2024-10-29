@@ -2,14 +2,17 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: ansibleexecutionenvironment.tower.ansible.com
+  name: ansibleexecutionenvironments.tower.ansible.com
 spec:
   group: tower.ansible.com
   names:
     kind: AnsibleExecutionEnvironment
     listKind: AnsibleExecutionEnvironmentList
-    plural: AnsibleExecutionEnvironments
-    singular: AnsibleExecutionEnvironment
+    plural: ansibleexecutionenvironments
+    shortNames:
+      - ee
+      - executionenvironment
+    singular: ansibleexecutionenvironment
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -57,7 +60,7 @@ spec:
                 type: string
                 description: The image pull behavior for the executionenvironment
               request_timeout:
-                type: string
+                type: integer
                 description: The request_timeout for the executionenvironment
               state:
                 type: string
@@ -65,9 +68,10 @@ spec:
                 enum: ["present", "absent", "exists"]
                 default: present
               validate_certs:
-                type: string
+                type: boolean
                 description: The validate_certs for the executionenvironment
             required:
+            - connection_secret
             - name
             description: Spec defines the definition of the AnsibleExecutionEnvironment
             type: object

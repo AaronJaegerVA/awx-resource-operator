@@ -4,6 +4,7 @@ metadata:
   name: executionenvironment
 spec:
   name: test_ee
+  connection_secret: awxaccess
   description: Test Execution Environment
   image: quay.io/ansible/awx-ee
   pull: always
